@@ -183,7 +183,7 @@ class GenUiChatBubble extends StatelessWidget {
           icon: Icons.auto_awesome_rounded,
           alignment: MainAxisAlignment.start,
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }

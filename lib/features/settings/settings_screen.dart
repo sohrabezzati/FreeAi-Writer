@@ -14,6 +14,7 @@ import '../../core/widgets/glass_container.dart';
 import '../../shared/models/app_settings.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/repositories/chat_repository.dart';
+import '../chat/providers/chat_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -79,9 +80,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final file = File('${dir.path}/freeai_writer_chats.json');
     await file.writeAsString(json);
 
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], subject: '${AppConstants.appName} Chat Export');
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: '${AppConstants.appName} Chat Export',
+      ),
+    );
   }
 
   Future<void> _clearHistory() async {
@@ -106,7 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(chatRepositoryProvider).clearAll();
+      await ref.read(chatProvider.notifier).clearHistory();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -131,171 +135,177 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           title: const Text('Settings'),
           actions: [
-            TextButton(
-              onPressed: _saveApiKeys,
-              child: const Text('Save'),
-            ),
+            TextButton(onPressed: _saveApiKeys, child: const Text('Save')),
           ],
         ),
         body: GenUiTheme.gradientBackground(
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-            Text('Appearance', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            GlassContainer(
-              child: Column(
-                children: ThemeModeOption.values.map((mode) {
-                  return RadioListTile<ThemeModeOption>(
-                    title: Text(mode.name.capitalize),
-                    value: mode,
-                    groupValue: settings.themeMode,
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref.read(settingsProvider.notifier).setThemeMode(value);
-                      }
-                    },
-                  );
-                }).toList(),
+              Text('Appearance', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              GlassContainer(
+                child: RadioGroup<ThemeModeOption>(
+                  groupValue: settings.themeMode,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setThemeMode(value);
+                    }
+                  },
+                  child: Column(
+                    children: ThemeModeOption.values.map((mode) {
+                      return RadioListTile<ThemeModeOption>(
+                        title: Text(mode.name.capitalize),
+                        value: mode,
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text('AI Provider', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            GlassContainer(
-              child: Column(
-                children: AiProviderType.values.map((provider) {
-                  return RadioListTile<AiProviderType>(
-                    title: Text(provider.displayName),
-                    subtitle: Text(provider.description),
-                    value: provider,
-                    groupValue: settings.preferredProvider,
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setPreferredProvider(value);
-                      }
-                    },
-                  );
-                }).toList(),
+              const SizedBox(height: 24),
+              Text(
+                'AI Provider',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-            ),
-            const SizedBox(height: 24),
-            Text('API Keys', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              'Free APIs still need a free key. Add at least one below, then '
-              'tap Save API Keys before chatting.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (!settings.hasAnyApiKey) ...[
+              const SizedBox(height: 12),
+              GlassContainer(
+                child: RadioGroup<AiProviderType>(
+                  groupValue: settings.preferredProvider,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setPreferredProvider(value);
+                    }
+                  },
+                  child: Column(
+                    children: AiProviderType.values.map((provider) {
+                      return RadioListTile<AiProviderType>(
+                        title: Text(provider.displayName),
+                        subtitle: Text(provider.description),
+                        value: provider,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('API Keys', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Free APIs still need a free key. Add at least one below, then '
+                'tap Save API Keys before chatting.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (!settings.hasAnyApiKey) ...[
+                const SizedBox(height: 12),
+                GlassContainer(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Recommended: Groq (free & fast)',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '1. Go to console.groq.com\n'
+                        '2. Create a free account\n'
+                        '3. Copy your API key (starts with gsk_)\n'
+                        '4. Paste it below and tap Save',
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Saved: ${settings.configuredProviders.map((p) => p.displayName).join(', ')}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               GlassContainer(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Recommended: Groq (free & fast)',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    _ApiKeyField(
+                      label: 'Groq (recommended)',
+                      controller: _groqKeyController,
+                      hint: 'gsk_...',
+                      isSaved: settings.groqApiKey.isNotEmpty,
+                      onSubmitted: (_) => _saveApiKeys(),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '1. Go to console.groq.com\n'
-                      '2. Create a free account\n'
-                      '3. Copy your API key (starts with gsk_)\n'
-                      '4. Paste it below and tap Save',
+                    _ApiKeyField(
+                      label: 'OpenRouter',
+                      controller: _orKeyController,
+                      hint: 'sk-or-...',
+                      isSaved: settings.openRouterApiKey.isNotEmpty,
+                      onSubmitted: (_) => _saveApiKeys(),
+                    ),
+                    _ApiKeyField(
+                      label: 'Together AI',
+                      controller: _togetherKeyController,
+                      hint: '...',
+                      isSaved: settings.togetherApiKey.isNotEmpty,
+                      onSubmitted: (_) => _saveApiKeys(),
+                    ),
+                    _ApiKeyField(
+                      label: 'Hugging Face',
+                      controller: _hfKeyController,
+                      hint: 'hf_...',
+                      isSaved: settings.huggingFaceApiKey.isNotEmpty,
+                      onSubmitted: (_) => _saveApiKeys(),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveApiKeys,
+                        child: const Text('Save API Keys'),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ] else ...[
-              const SizedBox(height: 8),
-              Text(
-                'Saved: ${settings.configuredProviders.map((p) => p.displayName).join(', ')}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+              const SizedBox(height: 24),
+              Text('Data', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              GlassContainer(
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.upload_rounded),
+                      title: const Text('Export Chats'),
+                      subtitle: const Text('Share chat history as JSON'),
+                      onTap: _exportChats,
                     ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      title: const Text('Clear History'),
+                      subtitle: const Text('Delete all saved chats'),
+                      onTap: _clearHistory,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Center(
+                child: Text(
+                  '${AppConstants.appName} v1.0.0',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
-            const SizedBox(height: 12),
-            GlassContainer(
-              child: Column(
-                children: [
-                  _ApiKeyField(
-                    label: 'Groq (recommended)',
-                    controller: _groqKeyController,
-                    hint: 'gsk_...',
-                    isSaved: settings.groqApiKey.isNotEmpty,
-                    onSubmitted: (_) => _saveApiKeys(),
-                  ),
-                  _ApiKeyField(
-                    label: 'OpenRouter',
-                    controller: _orKeyController,
-                    hint: 'sk-or-...',
-                    isSaved: settings.openRouterApiKey.isNotEmpty,
-                    onSubmitted: (_) => _saveApiKeys(),
-                  ),
-                  _ApiKeyField(
-                    label: 'Together AI',
-                    controller: _togetherKeyController,
-                    hint: '...',
-                    isSaved: settings.togetherApiKey.isNotEmpty,
-                    onSubmitted: (_) => _saveApiKeys(),
-                  ),
-                  _ApiKeyField(
-                    label: 'Hugging Face',
-                    controller: _hfKeyController,
-                    hint: 'hf_...',
-                    isSaved: settings.huggingFaceApiKey.isNotEmpty,
-                    onSubmitted: (_) => _saveApiKeys(),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveApiKeys,
-                      child: const Text('Save API Keys'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('Data', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            GlassContainer(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.upload_rounded),
-                    title: const Text('Export Chats'),
-                    subtitle: const Text('Share chat history as JSON'),
-                    onTap: _exportChats,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(
-                      Icons.delete_outline_rounded,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    title: const Text('Clear History'),
-                    subtitle: const Text('Delete all saved chats'),
-                    onTap: _clearHistory,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            Center(
-              child: Text(
-                '${AppConstants.appName} v1.0.0',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

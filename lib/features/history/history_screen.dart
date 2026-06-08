@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/utils/extensions.dart';
 import '../../core/genui/genui.dart';
 import '../../core/widgets/glass_container.dart';
-import '../../shared/repositories/chat_repository.dart';
 import '../chat/providers/chat_provider.dart';
 
 class HistoryScreen extends ConsumerWidget {
@@ -53,9 +52,8 @@ class HistoryScreen extends ConsumerWidget {
                     ),
                     onDismissed: (_) async {
                       await ref
-                          .read(chatRepositoryProvider)
+                          .read(chatProvider.notifier)
                           .deleteSession(session.id);
-                      ref.invalidate(chatSessionsProvider);
                     },
                     child: GlassContainer(
                       padding: const EdgeInsets.all(16),

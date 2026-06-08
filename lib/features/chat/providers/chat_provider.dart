@@ -287,6 +287,24 @@ class ChatNotifier extends Notifier<ChatState> {
     state = state.copyWith(clearError: true);
   }
 
+  Future<void> deleteSession(String sessionId) async {
+    await _repository.deleteSession(sessionId);
+    if (state.session?.id == sessionId) {
+      state = ChatState();
+    } else {
+      state = ChatState(
+        session: state.session,
+        isGenerating: state.isGenerating,
+        error: state.error,
+      );
+    }
+  }
+
+  Future<void> clearHistory() async {
+    await _repository.clearAll();
+    state = ChatState();
+  }
+
   String _sanitize(String text) {
     if (text.isEmpty) return '';
 
