@@ -50,16 +50,16 @@ class AiService {
 
   List<AiProvider> _orderedProviders(AppSettings settings) {
     if (settings.preferredProvider != AiProviderType.auto) {
-      final preferred = _providers[settings.preferredProvider.name];
+      final preferred = getProvider(settings.preferredProvider.name);
       if (preferred != null) {
         final others =
-            _providers.values.where((p) => p.id != preferred.id).toList();
+            allProviders.where((p) => p.id != preferred.id).toList();
         return [preferred, ...others];
       }
     }
 
     return _autoProviderOrder
-        .map((id) => _providers[id])
+        .map(getProvider)
         .whereType<AiProvider>()
         .toList();
   }
@@ -103,11 +103,13 @@ class AiService {
         AppLogger.info('Attempting completion stream using provider: ${provider.name}');
         attemptedProviders++;
         try {
-          yield* provider.streamCompletion(
+          await for (final chunk in provider.streamCompletion(
             request,
             apiKey: apiKey,
             cancelToken: cancelToken,
-          );
+          )) {
+            yield chunk;
+          }
           AppLogger.info('Successfully completed streaming with provider: ${provider.name}');
           return;
         } on AiProviderException catch (e) {

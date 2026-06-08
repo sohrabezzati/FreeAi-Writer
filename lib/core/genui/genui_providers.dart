@@ -23,6 +23,7 @@ final promptBuilderProvider = Provider<PromptBuilder>((ref) {
       '1. A "createSurface" message to initialize the area.',
       '2. An "updateComponents" message to populate it with widgets.',
       'Always send both blocks immediately in the same response.',
+      'When creating a UI, you MUST start your response immediately with the "---a2ui_JSON---" delimiter. Do NOT output any introductory text, pleasantries, or explanations before the first UI block.',
       'Always wrap your A2UI JSON blocks with "---a2ui_JSON---" delimiters like this:',
       '---a2ui_JSON---',
       '{ "version": "v0.9", "createSurface": { ... } }',

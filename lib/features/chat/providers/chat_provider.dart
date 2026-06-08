@@ -81,7 +81,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> sendMessage(String content) async {
-    AppLogger.info('sendMessage: Starting message generation. Content: "${content.truncate(30)}"');
+    AppLogger.info('sendMessage: Starting message generation. Content: "${_truncate(content, 30)}"');
     if (content.trim().isEmpty || state.isGenerating) {
       AppLogger.warning('sendMessage: Aborted (empty content or already generating)');
       return;
@@ -159,17 +159,19 @@ class ChatNotifier extends Notifier<ChatState> {
         systemPrompt: finalSystemPrompt,
       );
 
+      var accumulatedRawText = '';
       AppLogger.info('sendMessage: Starting stream from fallback providers...');
       await for (final chunk in _aiService.streamWithFallback(
         request: request,
         settings: settings,
         cancelToken: _cancelToken!,
       )) {
+        accumulatedRawText += chunk;
         transport.addChunk(chunk);
 
         updatedMessages = updatedMessages.map((m) {
           if (m.id == assistantId) {
-            final displayContent = _sanitize(conversation.state.value.latestText);
+            final displayContent = _sanitize(accumulatedRawText);
             return m.copyWith(
               content: displayContent.isEmpty ? '...' : displayContent,
               surfaceId: detectedSurfaceId,
@@ -188,7 +190,7 @@ class ChatNotifier extends Notifier<ChatState> {
       AppLogger.info('sendMessage: Stream completed successfully.');
       updatedMessages = updatedMessages.map((m) {
         if (m.id == assistantId) {
-          final finalContent = _sanitize(conversation.state.value.latestText);
+          final finalContent = _sanitize(accumulatedRawText);
           return m.copyWith(
             content: finalContent,
             status: MessageStatus.completed,
@@ -287,22 +289,26 @@ class ChatNotifier extends Notifier<ChatState> {
 
   String _sanitize(String text) {
     if (text.isEmpty) return '';
-    
-    // 1. Remove complete markers
-    var sanitized = text.replaceAll('---a2ui_JSON---', '');
-    
-    // 2. Hide partial markers at the END of the string to avoid showing "---a2u..."
-    // as random characters while the AI is streaming.
+
     const marker = '---a2ui_JSON---';
+
+    // If this is a GenUI response (contains marker or starts with its specific prefix),
+    // we do not show any simple text.
+    if (text.contains(marker) || (text.length >= 3 && marker.startsWith(text))) {
+      return '';
+    }
+
+    // Hide any partial marker at the end of the string
+    var result = text;
     for (var i = marker.length - 1; i > 0; i--) {
       final partial = marker.substring(0, i);
-      if (sanitized.endsWith(partial)) {
-        sanitized = sanitized.substring(0, sanitized.length - i);
+      if (result.endsWith(partial)) {
+        result = result.substring(0, result.length - i);
         break;
       }
     }
-    
-    return sanitized;
+
+    return result;
   }
 
   String _truncate(String text, int max) {

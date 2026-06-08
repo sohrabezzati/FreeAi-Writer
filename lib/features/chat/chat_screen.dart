@@ -68,11 +68,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
         );
       }
     });
+  }
+
+  void _scrollToBottomIfNeeded() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final isNearBottom = (pos.maxScrollExtent - pos.pixels) < 120;
+    if (isNearBottom) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    }
   }
 
   @override
@@ -83,9 +96,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final session = chatState.session;
     final messages = session?.messages ?? [];
 
-    ref.listen(chatProvider, (_, next) {
-      if (next.session?.messages.isNotEmpty ?? false) {
+    ref.listen(chatProvider, (previous, next) {
+      final prevMessages = previous?.session?.messages ?? [];
+      final nextMessages = next.session?.messages ?? [];
+
+      if (nextMessages.length > prevMessages.length) {
         _scrollToBottom();
+      } else if (next.isGenerating) {
+        _scrollToBottomIfNeeded();
       }
     });
 

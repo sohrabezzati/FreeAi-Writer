@@ -51,12 +51,17 @@ class MessageBubble extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (isUser)
-              Text(
-                message.content,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  height: 1.5,
+              Directionality(
+                textDirection: _isRtl(message.content)
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                child: Text(
+                  message.content,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
                 ),
               )
             else ...[
@@ -68,26 +73,32 @@ class MessageBubble extends ConsumerWidget {
                     surfaceId: message.surfaceId!,
                   ),
                 ),
-              MarkdownBody(
-                data: message.content.isEmpty ? '...' : message.content,
-                selectable: true,
-                styleSheet: MarkdownStyleSheet(
-                  p: Theme.of(context).textTheme.bodyMedium,
-                  code: TextStyle(
-                    backgroundColor: isDark
-                        ? Colors.black26
-                        : Colors.black.withValues(alpha: 0.05),
-                    fontFamily: 'monospace',
-                    fontSize: 13,
-                  ),
-                  codeblockDecoration: BoxDecoration(
-                    color: isDark
-                        ? atomOneDarkTheme['root']!.backgroundColor
-                        : atomOneLightTheme['root']!.backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
+              if (message.content.isNotEmpty)
+                Directionality(
+                  textDirection: _isRtl(message.content)
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
+                  child: MarkdownBody(
+                    data: message.content,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      p: Theme.of(context).textTheme.bodyMedium,
+                      code: TextStyle(
+                        backgroundColor: isDark
+                            ? Colors.black26
+                            : Colors.black.withValues(alpha: 0.05),
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                      ),
+                      codeblockDecoration: BoxDecoration(
+                        color: isDark
+                            ? atomOneDarkTheme['root']!.backgroundColor
+                            : atomOneLightTheme['root']!.backgroundColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
             if (message.status == MessageStatus.streaming)
               Padding(
@@ -206,4 +217,12 @@ class _TypingDotsState extends State<_TypingDots>
       },
     );
   }
+}
+
+bool _isRtl(String text) {
+  if (text.isEmpty) return false;
+  final rtlRegex = RegExp(
+    r'[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u0780-\u07BF\u0800-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]'
+  );
+  return rtlRegex.hasMatch(text);
 }
