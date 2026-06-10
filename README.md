@@ -101,6 +101,15 @@ Set **AI Provider** to **Auto (Fallback)** to try providers in order until one s
 - Automatic provider fallback and retry (3 attempts)
 - Rate limit handling with backoff
 
+## Screen shots
+
+<img width="320" height="700" alt="image" src="https://github.com/user-attachments/assets/fe0edfbb-7fe5-434e-9e55-e210fc3912ac" />
+<img width="320" height="700" alt="image" src="https://github.com/user-attachments/assets/35fc1f9a-8621-476e-81a8-cfb17f974fbc" />
+<img width="320" height="700" alt="image" src="https://github.com/user-attachments/assets/8c0c4a4c-c5ea-41e0-8870-da2e6c3c9fec" />
+<img width="320" height="700" alt="image" src="https://github.com/user-attachments/assets/f134cd72-4f4c-4d2a-9174-aae6d30f70a1" />
+<img width="320" height="700" alt="image" src="https://github.com/user-attachments/assets/8737bea8-2f5a-49a6-88ac-946e9229a921" />
+
+
 ## License
 
 MIT
