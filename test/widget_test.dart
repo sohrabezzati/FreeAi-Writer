@@ -8,7 +8,7 @@ void main() {
   test('AppSettings has sensible defaults', () {
     const settings = AppSettings();
     expect(settings.themeMode, ThemeModeOption.system);
-    expect(settings.preferredProvider, AiProviderType.auto);
+    expect(settings.selectedModelId, 'groq:llama-4-70b-versatile');
     expect(settings.onboardingComplete, false);
   });
 

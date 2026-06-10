@@ -22,8 +22,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await updateSettings(state.copyWith(themeMode: mode));
   }
 
-  Future<void> setPreferredProvider(AiProviderType provider) async {
-    await updateSettings(state.copyWith(preferredProvider: provider));
+  Future<void> setSelectedModel(String modelId) async {
+    await updateSettings(state.copyWith(selectedModelId: modelId));
   }
 
   Future<void> setApiKey({
@@ -50,8 +50,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
 final settingsProvider =
     NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);
 
-ThemeMode resolveThemeMode(AppSettings settings) {
-  return switch (settings.themeMode) {
+ThemeMode resolveThemeMode(ThemeModeOption mode) {
+  return switch (mode) {
     ThemeModeOption.light => ThemeMode.light,
     ThemeModeOption.dark => ThemeMode.dark,
     ThemeModeOption.system => ThemeMode.system,

@@ -29,14 +29,16 @@ class LoggingNavigatorObserver extends NavigatorObserver {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final settings = ref.watch(settingsProvider);
+  // Only rebuild the router for navigation-critical settings changes.
+  final onboardingComplete = ref.watch(
+    settingsProvider.select((settings) => settings.onboardingComplete),
+  );
 
   return GoRouter(
     initialLocation: '/splash',
     observers: [LoggingNavigatorObserver()],
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final onboardingComplete = settings.onboardingComplete;
 
       if (location == '/splash') return null;
 

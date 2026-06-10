@@ -115,7 +115,8 @@ void main() {
     },
   );
 
-  test('AiService streamWithFallback switches provider on failure', () async {
+  test('AiService streamWithFallback throws when selected model provider fails',
+      () async {
     final networkInfo = FakeNetworkInfo(connected: true);
     final failingProvider = FakeAiProvider(
       'groq',
@@ -123,29 +124,27 @@ void main() {
       shouldSucceed: false,
       errorMessage: 'Rate limit',
     );
-    final successProvider = FakeAiProvider(
-      'openrouter',
-      'OpenRouter',
-      shouldSucceed: true,
-    );
 
     final service = TestAiService(
       networkInfo: networkInfo,
-      mockProviders: [failingProvider, successProvider],
+      mockProviders: [failingProvider],
     );
 
-    // Groq is preferred/auto first, will fail, then falls back to OpenRouter.
-    final chunks = await service
-        .streamWithFallback(
-          request: const AiCompletionRequest(messages: []),
-          settings: const AppSettings(
-            groqApiKey: 'gsk_test',
-            openRouterApiKey: 'sk_test',
-          ),
-          cancelToken: AiCancelToken(),
-        )
-        .toList();
-
-    expect(chunks, ['Hello', ' ', 'World']);
+    expect(
+      () => service
+          .streamWithFallback(
+            request: const AiCompletionRequest(messages: []),
+            settings: const AppSettings(groqApiKey: 'gsk_test'),
+            cancelToken: AiCancelToken(),
+          )
+          .toList(),
+      throwsA(
+        isA<AiProviderException>().having(
+          (e) => e.message,
+          'message',
+          contains('Rate limit'),
+        ),
+      ),
+    );
   });
 }

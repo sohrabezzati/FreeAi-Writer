@@ -26,14 +26,14 @@ void main() {
   test('SettingsRepository returns default settings when box is empty', () {
     final settings = repository.getSettings();
     expect(settings.themeMode, ThemeModeOption.system);
-    expect(settings.preferredProvider, AiProviderType.auto);
+    expect(settings.selectedModelId, 'groq:llama-4-70b-versatile');
     expect(settings.groqApiKey, isEmpty);
   });
 
   test('SettingsRepository saves and retrieves settings correctly', () async {
     const settings = AppSettings(
       themeMode: ThemeModeOption.dark,
-      preferredProvider: AiProviderType.groq,
+      selectedModelId: 'groq:gemma4-31b-it',
       groqApiKey: 'gsk_test_key_123',
     );
 
@@ -41,7 +41,7 @@ void main() {
 
     final retrieved = repository.getSettings();
     expect(retrieved.themeMode, ThemeModeOption.dark);
-    expect(retrieved.preferredProvider, AiProviderType.groq);
+    expect(retrieved.selectedModelId, 'groq:gemma4-31b-it');
     expect(retrieved.groqApiKey, 'gsk_test_key_123');
   });
 

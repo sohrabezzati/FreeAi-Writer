@@ -10,9 +10,8 @@ _AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) => _AppSettings(
   themeMode:
       $enumDecodeNullable(_$ThemeModeOptionEnumMap, json['themeMode']) ??
       ThemeModeOption.system,
-  preferredProvider:
-      $enumDecodeNullable(_$AiProviderTypeEnumMap, json['preferredProvider']) ??
-      AiProviderType.auto,
+  selectedModelId:
+      json['selectedModelId'] as String? ?? 'groq:llama-4-70b-versatile',
   huggingFaceApiKey: json['huggingFaceApiKey'] as String? ?? '',
   openRouterApiKey: json['openRouterApiKey'] as String? ?? '',
   togetherApiKey: json['togetherApiKey'] as String? ?? '',
@@ -23,7 +22,7 @@ _AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) => _AppSettings(
 Map<String, dynamic> _$AppSettingsToJson(_AppSettings instance) =>
     <String, dynamic>{
       'themeMode': _$ThemeModeOptionEnumMap[instance.themeMode]!,
-      'preferredProvider': _$AiProviderTypeEnumMap[instance.preferredProvider]!,
+      'selectedModelId': instance.selectedModelId,
       'huggingFaceApiKey': instance.huggingFaceApiKey,
       'openRouterApiKey': instance.openRouterApiKey,
       'togetherApiKey': instance.togetherApiKey,
@@ -35,12 +34,4 @@ const _$ThemeModeOptionEnumMap = {
   ThemeModeOption.system: 'system',
   ThemeModeOption.light: 'light',
   ThemeModeOption.dark: 'dark',
-};
-
-const _$AiProviderTypeEnumMap = {
-  AiProviderType.auto: 'auto',
-  AiProviderType.huggingface: 'huggingface',
-  AiProviderType.openrouter: 'openrouter',
-  AiProviderType.together: 'together',
-  AiProviderType.groq: 'groq',
 };

@@ -165,33 +165,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'AI Provider',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              GlassContainer(
-                child: RadioGroup<AiProviderType>(
-                  groupValue: settings.preferredProvider,
-                  onChanged: (value) {
-                    if (value != null) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setPreferredProvider(value);
-                    }
-                  },
-                  child: Column(
-                    children: AiProviderType.values.map((provider) {
-                      return RadioListTile<AiProviderType>(
-                        title: Text(provider.displayName),
-                        subtitle: Text(provider.description),
-                        value: provider,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               Text('API Keys', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(

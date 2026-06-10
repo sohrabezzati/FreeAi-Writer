@@ -63,57 +63,12 @@ class HomeScreen extends ConsumerWidget {
             ),
             if (!settings.hasAnyApiKey)
               const SliverToBoxAdapter(child: ApiKeySetupBanner()),
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: GenUiGlassCard(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.hub_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'AI Provider',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                            Text(
-                              settings.preferredProvider.displayName,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      DropdownButton<AiProviderType>(
-                        value: settings.preferredProvider,
-                        underline: const SizedBox.shrink(),
-                        items: AiProviderType.values
-                            .map(
-                              (p) => DropdownMenuItem(
-                                value: p,
-                                child: Text(p.displayName),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setPreferredProvider(value);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                padding: EdgeInsets.fromLTRB(0, 20, 0, 12),
+                child: QuickActions(),
               ),
             ),
-            const SliverToBoxAdapter(child: QuickActions()),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -127,7 +82,9 @@ class HomeScreen extends ConsumerWidget {
               child: TemplateGrid(
                 templates: TemplateConstants.templates,
                 onTemplateTap: (template) {
-                  ref.read(chatProvider.notifier).createSession(
+                  ref
+                      .read(chatProvider.notifier)
+                      .createSession(
                         templateId: template.id,
                         systemPrompt: template.systemPrompt,
                         initialTitle: template.title,

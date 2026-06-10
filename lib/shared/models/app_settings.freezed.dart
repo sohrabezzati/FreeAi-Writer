@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppSettings {
 
- ThemeModeOption get themeMode; AiProviderType get preferredProvider; String get huggingFaceApiKey; String get openRouterApiKey; String get togetherApiKey; String get groqApiKey; bool get onboardingComplete;
+ ThemeModeOption get themeMode; String get selectedModelId; String get huggingFaceApiKey; String get openRouterApiKey; String get togetherApiKey; String get groqApiKey; bool get onboardingComplete;
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AppSettingsCopyWith<AppSettings> get copyWith => _$AppSettingsCopyWithImpl<AppS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.preferredProvider, preferredProvider) || other.preferredProvider == preferredProvider)&&(identical(other.huggingFaceApiKey, huggingFaceApiKey) || other.huggingFaceApiKey == huggingFaceApiKey)&&(identical(other.openRouterApiKey, openRouterApiKey) || other.openRouterApiKey == openRouterApiKey)&&(identical(other.togetherApiKey, togetherApiKey) || other.togetherApiKey == togetherApiKey)&&(identical(other.groqApiKey, groqApiKey) || other.groqApiKey == groqApiKey)&&(identical(other.onboardingComplete, onboardingComplete) || other.onboardingComplete == onboardingComplete));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.selectedModelId, selectedModelId) || other.selectedModelId == selectedModelId)&&(identical(other.huggingFaceApiKey, huggingFaceApiKey) || other.huggingFaceApiKey == huggingFaceApiKey)&&(identical(other.openRouterApiKey, openRouterApiKey) || other.openRouterApiKey == openRouterApiKey)&&(identical(other.togetherApiKey, togetherApiKey) || other.togetherApiKey == togetherApiKey)&&(identical(other.groqApiKey, groqApiKey) || other.groqApiKey == groqApiKey)&&(identical(other.onboardingComplete, onboardingComplete) || other.onboardingComplete == onboardingComplete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,themeMode,preferredProvider,huggingFaceApiKey,openRouterApiKey,togetherApiKey,groqApiKey,onboardingComplete);
+int get hashCode => Object.hash(runtimeType,themeMode,selectedModelId,huggingFaceApiKey,openRouterApiKey,togetherApiKey,groqApiKey,onboardingComplete);
 
 @override
 String toString() {
-  return 'AppSettings(themeMode: $themeMode, preferredProvider: $preferredProvider, huggingFaceApiKey: $huggingFaceApiKey, openRouterApiKey: $openRouterApiKey, togetherApiKey: $togetherApiKey, groqApiKey: $groqApiKey, onboardingComplete: $onboardingComplete)';
+  return 'AppSettings(themeMode: $themeMode, selectedModelId: $selectedModelId, huggingFaceApiKey: $huggingFaceApiKey, openRouterApiKey: $openRouterApiKey, togetherApiKey: $togetherApiKey, groqApiKey: $groqApiKey, onboardingComplete: $onboardingComplete)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AppSettingsCopyWith<$Res>  {
   factory $AppSettingsCopyWith(AppSettings value, $Res Function(AppSettings) _then) = _$AppSettingsCopyWithImpl;
 @useResult
 $Res call({
- ThemeModeOption themeMode, AiProviderType preferredProvider, String huggingFaceApiKey, String openRouterApiKey, String togetherApiKey, String groqApiKey, bool onboardingComplete
+ ThemeModeOption themeMode, String selectedModelId, String huggingFaceApiKey, String openRouterApiKey, String togetherApiKey, String groqApiKey, bool onboardingComplete
 });
 
 
@@ -65,11 +65,11 @@ class _$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? preferredProvider = null,Object? huggingFaceApiKey = null,Object? openRouterApiKey = null,Object? togetherApiKey = null,Object? groqApiKey = null,Object? onboardingComplete = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? selectedModelId = null,Object? huggingFaceApiKey = null,Object? openRouterApiKey = null,Object? togetherApiKey = null,Object? groqApiKey = null,Object? onboardingComplete = null,}) {
   return _then(_self.copyWith(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
-as ThemeModeOption,preferredProvider: null == preferredProvider ? _self.preferredProvider : preferredProvider // ignore: cast_nullable_to_non_nullable
-as AiProviderType,huggingFaceApiKey: null == huggingFaceApiKey ? _self.huggingFaceApiKey : huggingFaceApiKey // ignore: cast_nullable_to_non_nullable
+as ThemeModeOption,selectedModelId: null == selectedModelId ? _self.selectedModelId : selectedModelId // ignore: cast_nullable_to_non_nullable
+as String,huggingFaceApiKey: null == huggingFaceApiKey ? _self.huggingFaceApiKey : huggingFaceApiKey // ignore: cast_nullable_to_non_nullable
 as String,openRouterApiKey: null == openRouterApiKey ? _self.openRouterApiKey : openRouterApiKey // ignore: cast_nullable_to_non_nullable
 as String,togetherApiKey: null == togetherApiKey ? _self.togetherApiKey : togetherApiKey // ignore: cast_nullable_to_non_nullable
 as String,groqApiKey: null == groqApiKey ? _self.groqApiKey : groqApiKey // ignore: cast_nullable_to_non_nullable
@@ -159,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ThemeModeOption themeMode,  AiProviderType preferredProvider,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ThemeModeOption themeMode,  String selectedModelId,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
+return $default(_that.themeMode,_that.selectedModelId,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
   return orElse();
 
 }
@@ -180,10 +180,10 @@ return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ThemeModeOption themeMode,  AiProviderType preferredProvider,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ThemeModeOption themeMode,  String selectedModelId,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings():
-return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
+return $default(_that.themeMode,_that.selectedModelId,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +200,10 @@ return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ThemeModeOption themeMode,  AiProviderType preferredProvider,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ThemeModeOption themeMode,  String selectedModelId,  String huggingFaceApiKey,  String openRouterApiKey,  String togetherApiKey,  String groqApiKey,  bool onboardingComplete)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
+return $default(_that.themeMode,_that.selectedModelId,_that.huggingFaceApiKey,_that.openRouterApiKey,_that.togetherApiKey,_that.groqApiKey,_that.onboardingComplete);case _:
   return null;
 
 }
@@ -215,11 +215,11 @@ return $default(_that.themeMode,_that.preferredProvider,_that.huggingFaceApiKey,
 @JsonSerializable()
 
 class _AppSettings implements AppSettings {
-  const _AppSettings({this.themeMode = ThemeModeOption.system, this.preferredProvider = AiProviderType.auto, this.huggingFaceApiKey = '', this.openRouterApiKey = '', this.togetherApiKey = '', this.groqApiKey = '', this.onboardingComplete = false});
+  const _AppSettings({this.themeMode = ThemeModeOption.system, this.selectedModelId = 'groq:llama-4-70b-versatile', this.huggingFaceApiKey = '', this.openRouterApiKey = '', this.togetherApiKey = '', this.groqApiKey = '', this.onboardingComplete = false});
   factory _AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);
 
 @override@JsonKey() final  ThemeModeOption themeMode;
-@override@JsonKey() final  AiProviderType preferredProvider;
+@override@JsonKey() final  String selectedModelId;
 @override@JsonKey() final  String huggingFaceApiKey;
 @override@JsonKey() final  String openRouterApiKey;
 @override@JsonKey() final  String togetherApiKey;
@@ -239,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.preferredProvider, preferredProvider) || other.preferredProvider == preferredProvider)&&(identical(other.huggingFaceApiKey, huggingFaceApiKey) || other.huggingFaceApiKey == huggingFaceApiKey)&&(identical(other.openRouterApiKey, openRouterApiKey) || other.openRouterApiKey == openRouterApiKey)&&(identical(other.togetherApiKey, togetherApiKey) || other.togetherApiKey == togetherApiKey)&&(identical(other.groqApiKey, groqApiKey) || other.groqApiKey == groqApiKey)&&(identical(other.onboardingComplete, onboardingComplete) || other.onboardingComplete == onboardingComplete));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.selectedModelId, selectedModelId) || other.selectedModelId == selectedModelId)&&(identical(other.huggingFaceApiKey, huggingFaceApiKey) || other.huggingFaceApiKey == huggingFaceApiKey)&&(identical(other.openRouterApiKey, openRouterApiKey) || other.openRouterApiKey == openRouterApiKey)&&(identical(other.togetherApiKey, togetherApiKey) || other.togetherApiKey == togetherApiKey)&&(identical(other.groqApiKey, groqApiKey) || other.groqApiKey == groqApiKey)&&(identical(other.onboardingComplete, onboardingComplete) || other.onboardingComplete == onboardingComplete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,themeMode,preferredProvider,huggingFaceApiKey,openRouterApiKey,togetherApiKey,groqApiKey,onboardingComplete);
+int get hashCode => Object.hash(runtimeType,themeMode,selectedModelId,huggingFaceApiKey,openRouterApiKey,togetherApiKey,groqApiKey,onboardingComplete);
 
 @override
 String toString() {
-  return 'AppSettings(themeMode: $themeMode, preferredProvider: $preferredProvider, huggingFaceApiKey: $huggingFaceApiKey, openRouterApiKey: $openRouterApiKey, togetherApiKey: $togetherApiKey, groqApiKey: $groqApiKey, onboardingComplete: $onboardingComplete)';
+  return 'AppSettings(themeMode: $themeMode, selectedModelId: $selectedModelId, huggingFaceApiKey: $huggingFaceApiKey, openRouterApiKey: $openRouterApiKey, togetherApiKey: $togetherApiKey, groqApiKey: $groqApiKey, onboardingComplete: $onboardingComplete)';
 }
 
 
@@ -259,7 +259,7 @@ abstract mixin class _$AppSettingsCopyWith<$Res> implements $AppSettingsCopyWith
   factory _$AppSettingsCopyWith(_AppSettings value, $Res Function(_AppSettings) _then) = __$AppSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- ThemeModeOption themeMode, AiProviderType preferredProvider, String huggingFaceApiKey, String openRouterApiKey, String togetherApiKey, String groqApiKey, bool onboardingComplete
+ ThemeModeOption themeMode, String selectedModelId, String huggingFaceApiKey, String openRouterApiKey, String togetherApiKey, String groqApiKey, bool onboardingComplete
 });
 
 
@@ -276,11 +276,11 @@ class __$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,Object? preferredProvider = null,Object? huggingFaceApiKey = null,Object? openRouterApiKey = null,Object? togetherApiKey = null,Object? groqApiKey = null,Object? onboardingComplete = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,Object? selectedModelId = null,Object? huggingFaceApiKey = null,Object? openRouterApiKey = null,Object? togetherApiKey = null,Object? groqApiKey = null,Object? onboardingComplete = null,}) {
   return _then(_AppSettings(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
-as ThemeModeOption,preferredProvider: null == preferredProvider ? _self.preferredProvider : preferredProvider // ignore: cast_nullable_to_non_nullable
-as AiProviderType,huggingFaceApiKey: null == huggingFaceApiKey ? _self.huggingFaceApiKey : huggingFaceApiKey // ignore: cast_nullable_to_non_nullable
+as ThemeModeOption,selectedModelId: null == selectedModelId ? _self.selectedModelId : selectedModelId // ignore: cast_nullable_to_non_nullable
+as String,huggingFaceApiKey: null == huggingFaceApiKey ? _self.huggingFaceApiKey : huggingFaceApiKey // ignore: cast_nullable_to_non_nullable
 as String,openRouterApiKey: null == openRouterApiKey ? _self.openRouterApiKey : openRouterApiKey // ignore: cast_nullable_to_non_nullable
 as String,togetherApiKey: null == togetherApiKey ? _self.togetherApiKey : togetherApiKey // ignore: cast_nullable_to_non_nullable
 as String,groqApiKey: null == groqApiKey ? _self.groqApiKey : groqApiKey // ignore: cast_nullable_to_non_nullable

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/free_models.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/network_info.dart';
 import '../../core/utils/logger.dart';
@@ -27,13 +28,6 @@ class AiService {
   final NetworkInfo _networkInfo;
   final Map<String, AiProvider> _providers;
 
-  static const _autoProviderOrder = [
-    'groq',
-    'openrouter',
-    'together',
-    'huggingface',
-  ];
-
   List<AiProvider> get allProviders => _providers.values.toList();
 
   AiProvider? getProvider(String id) => _providers[id];
@@ -48,21 +42,8 @@ class AiService {
     };
   }
 
-  List<AiProvider> _orderedProviders(AppSettings settings) {
-    if (settings.preferredProvider != AiProviderType.auto) {
-      final preferred = getProvider(settings.preferredProvider.name);
-      if (preferred != null) {
-        final others =
-            allProviders.where((p) => p.id != preferred.id).toList();
-        return [preferred, ...others];
-      }
-    }
-
-    return _autoProviderOrder
-        .map(getProvider)
-        .whereType<AiProvider>()
-        .toList();
-  }
+  FreeAiModel _selectedModel(AppSettings settings) =>
+      FreeModelsCatalog.resolve(settings.selectedModelId);
 
   Stream<String> streamWithFallback({
     required AiCompletionRequest request,
@@ -82,64 +63,73 @@ class AiService {
       throw AiProviderException(settings.missingApiKeyMessage);
     }
 
-    final providers = _orderedProviders(settings);
+    final selectedModel = _selectedModel(settings);
+    final provider = getProvider(selectedModel.provider.name);
+    if (provider == null) {
+      throw AiProviderException(
+        'Selected model is not available. Choose another model in Settings.',
+      );
+    }
+
+    final apiKey = _apiKeyForProvider(provider, settings);
+    if (!provider.isAvailable(apiKey: apiKey)) {
+      throw AiProviderException(
+        '${provider.name} API key required for ${selectedModel.displayName}. '
+        'Add it in Settings.',
+      );
+    }
+
+    final modelRequest = AiCompletionRequest(
+      messages: request.messages,
+      systemPrompt: request.systemPrompt,
+      model: selectedModel.modelId,
+      temperature: request.temperature,
+      maxTokens: request.maxTokens,
+    );
+
     AiProviderException? lastError;
-    var attemptedProviders = 0;
 
     for (var attempt = 0; attempt < AppConstants.maxRetries; attempt++) {
-      AppLogger.info('Streaming attempt ${attempt + 1}/${AppConstants.maxRetries} starting.');
-      for (final provider in providers) {
-        if (cancelToken.isCancelled) {
-          AppLogger.info('Streaming cancelled by user.');
-          return;
-        }
-
-        final apiKey = _apiKeyForProvider(provider, settings);
-        if (!provider.isAvailable(apiKey: apiKey)) {
-          AppLogger.debug('Provider ${provider.name} is not configured/available. Skipping.');
-          continue;
-        }
-
-        AppLogger.info('Attempting completion stream using provider: ${provider.name}');
-        attemptedProviders++;
-        try {
-          await for (final chunk in provider.streamCompletion(
-            request,
-            apiKey: apiKey,
-            cancelToken: cancelToken,
-          )) {
-            yield chunk;
-          }
-          AppLogger.info('Successfully completed streaming with provider: ${provider.name}');
-          return;
-        } on AiProviderException catch (e) {
-          AppLogger.warning('Provider ${provider.name} failed: ${e.message} (rate-limited: ${e.isRateLimited})');
-          lastError = e;
-          if (e.isRateLimited) {
-            AppLogger.info('Provider rate-limited. Waiting for ${AppConstants.retryDelay.inSeconds}s before next attempt.');
-            await Future<void>.delayed(AppConstants.retryDelay);
-          }
-          AppLogger.info('Switching to next available provider.');
-          continue;
-        }
+      if (cancelToken.isCancelled) {
+        AppLogger.info('Streaming cancelled by user.');
+        return;
       }
 
-      if (attempt < AppConstants.maxRetries - 1) {
-        AppLogger.info('Attempt failed. Retrying all providers in ${AppConstants.retryDelay.inSeconds}s.');
-        await Future<void>.delayed(AppConstants.retryDelay);
+      AppLogger.info(
+        'Attempting completion with model: ${selectedModel.modelId} '
+        'via ${provider.name} (attempt ${attempt + 1})',
+      );
+
+      try {
+        await for (final chunk in provider.streamCompletion(
+          modelRequest,
+          apiKey: apiKey,
+          cancelToken: cancelToken,
+        )) {
+          yield chunk;
+        }
+        AppLogger.info(
+          'Successfully completed streaming with model: ${selectedModel.modelId}',
+        );
+        return;
+      } on AiProviderException catch (e) {
+        AppLogger.warning(
+          'Model ${selectedModel.modelId} failed: ${e.message} '
+          '(rate-limited: ${e.isRateLimited})',
+        );
+        lastError = e;
+        if (e.isRateLimited && attempt < AppConstants.maxRetries - 1) {
+          await Future<void>.delayed(AppConstants.retryDelay);
+          continue;
+        }
+        break;
       }
     }
 
-    if (attemptedProviders == 0) {
-      AppLogger.error('Failed to stream: No available provider configured with keys.');
-      throw AiProviderException(settings.missingApiKeyMessage);
-    }
-
-    AppLogger.error('All configured providers failed after ${AppConstants.maxRetries} attempts. Last error: ${lastError?.message}');
     throw lastError ??
         AiProviderException(
-          'All configured providers failed. Check your API keys in Settings '
-          'or try a different provider.',
+          'Failed to generate a response with ${selectedModel.labelWithProvider}. '
+          'Try another model or check your API key.',
         );
   }
 }

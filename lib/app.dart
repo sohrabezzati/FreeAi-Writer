@@ -12,7 +12,9 @@ class FreeAiWriterApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
+    final themeMode = ref.watch(
+      settingsProvider.select((settings) => settings.themeMode),
+    );
     final router = ref.watch(routerProvider);
     // Initialize GenUI surface controller for the app lifecycle.
     ref.watch(surfaceControllerProvider);
@@ -22,7 +24,7 @@ class FreeAiWriterApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: GenUiTheme.apply(AppTheme.light()),
       darkTheme: GenUiTheme.apply(AppTheme.dark()),
-      themeMode: resolveThemeMode(settings),
+      themeMode: resolveThemeMode(themeMode),
       routerConfig: router,
     );
   }

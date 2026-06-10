@@ -156,10 +156,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             Icon(
                               Icons.auto_awesome_rounded,
                               size: 48,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: 0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -171,7 +170,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               settings.hasAnyApiKey
                                   ? 'Type a message below to generate AI text'
                                   : 'Add a free Groq API key in Settings first, '
-                                      'then come back to chat.',
+                                        'then come back to chat.',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
@@ -191,22 +190,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
                         return MessageBubble(
                           message: message,
-                          showActions: isLast &&
-                              isAssistant &&
-                              !chatState.isGenerating,
+                          showActions:
+                              isLast && isAssistant && !chatState.isGenerating,
                           onCopy: () {
                             Clipboard.setData(
                               ClipboardData(text: message.content),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Copied to clipboard')),
+                              const SnackBar(
+                                content: Text('Copied to clipboard'),
+                              ),
                             );
                           },
                           onRegenerate: chatState.isGenerating
                               ? null
                               : () => ref
-                                  .read(chatProvider.notifier)
-                                  .regenerateLastResponse(),
+                                    .read(chatProvider.notifier)
+                                    .regenerateLastResponse(),
                         );
                       },
                     ),

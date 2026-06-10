@@ -8,9 +8,5 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HiveService.init();
 
-  runApp(
-    const ProviderScope(
-      child: FreeAiWriterApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: FreeAiWriterApp()));
 }

@@ -29,7 +29,7 @@ enum AiProviderType {
 abstract class AppSettings with _$AppSettings {
   const factory AppSettings({
     @Default(ThemeModeOption.system) ThemeModeOption themeMode,
-    @Default(AiProviderType.auto) AiProviderType preferredProvider,
+    @Default('groq:llama-4-70b-versatile') String selectedModelId,
     @Default('') String huggingFaceApiKey,
     @Default('') String openRouterApiKey,
     @Default('') String togetherApiKey,
@@ -73,14 +73,5 @@ extension AiProviderTypeX on AiProviderType {
         AiProviderType.openrouter => 'OpenRouter',
         AiProviderType.together => 'Together AI',
         AiProviderType.groq => 'Groq',
-      };
-
-  String get description => switch (this) {
-        AiProviderType.auto =>
-          'Automatically tries providers until one succeeds',
-        AiProviderType.huggingface => 'Free inference API models',
-        AiProviderType.openrouter => 'Free tier chat models',
-        AiProviderType.together => 'Together AI free tier',
-        AiProviderType.groq => 'Fast Groq inference',
       };
 }
