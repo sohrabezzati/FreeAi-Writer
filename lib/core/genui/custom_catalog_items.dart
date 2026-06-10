@@ -58,12 +58,19 @@ final emptyStateCatalogItem = CatalogItem(
   ),
   widgetBuilder: (itemContext) {
     final json = itemContext.data as Map<String, Object?>;
+    final actionLabel = json['actionLabel'] as String?;
     return GenUiEmptyState(
       icon: _iconFromName(json['icon'] as String? ?? 'info_outline'),
       title: json['title'] as String? ?? '',
       message: json['message'] as String?,
-      actionLabel: json['actionLabel'] as String?,
-      onAction: json['actionLabel'] != null ? () {} : null,
+      actionLabel: actionLabel,
+      onAction: actionLabel != null
+          ? () => _dispatchCatalogAction(
+                itemContext,
+                name: 'empty_state_action',
+                context: {'label': actionLabel},
+              )
+          : null,
     );
   },
 );
@@ -95,11 +102,18 @@ final bannerCatalogItem = CatalogItem(
   ),
   widgetBuilder: (itemContext) {
     final json = itemContext.data as Map<String, Object?>;
+    final actionLabel = json['actionLabel'] as String?;
     return GenUiBanner(
       title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
-      actionLabel: json['actionLabel'] as String?,
-      onAction: () {},
+      actionLabel: actionLabel,
+      onAction: actionLabel != null
+          ? () => _dispatchCatalogAction(
+                itemContext,
+                name: 'banner_action',
+                context: {'label': actionLabel},
+              )
+          : null,
     );
   },
 );
@@ -148,6 +162,20 @@ final templateTileCatalogItem = CatalogItem(
     );
   },
 );
+
+void _dispatchCatalogAction(
+  CatalogItemContext itemContext, {
+  required String name,
+  required Map<String, Object?> context,
+}) {
+  itemContext.dispatchEvent(
+    UserActionEvent(
+      name: name,
+      sourceComponentId: itemContext.id,
+      context: context,
+    ),
+  );
+}
 
 IconData _iconFromName(String name) {
   return switch (name) {

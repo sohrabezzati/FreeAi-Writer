@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:genai_primitives/genai_primitives.dart' as genai;
+import 'package:genui/genui.dart' as genui;
 import 'package:genui/genui.dart' hide ChatMessage;
 import 'package:uuid/uuid.dart';
 
@@ -42,6 +46,12 @@ class ChatNotifier extends Notifier<ChatState> {
   late SurfaceController _surfaceController;
   late PromptBuilder _promptBuilder;
 
+  genui.A2uiTransportAdapter? _genUiTransport;
+  genui.Conversation? _genUiConversation;
+  StreamSubscription<genui.ConversationEvent>? _genUiEventsSub;
+  String? _pendingAssistantId;
+  String? _pendingSurfaceId;
+
   @override
   ChatState build() {
     _repository = ref.watch(chatRepositoryProvider);
@@ -49,11 +59,112 @@ class ChatNotifier extends Notifier<ChatState> {
     _surfaceController = ref.watch(surfaceControllerProvider);
     _promptBuilder = ref.watch(promptBuilderProvider);
 
+    _ensureGenUi();
+
     ref.onDispose(() {
       _cancelToken?.cancel();
+      _disposeGenUi();
     });
 
     return const ChatState();
+  }
+
+  void _ensureGenUi() {
+    if (_genUiConversation != null) return;
+
+    _genUiTransport = genui.A2uiTransportAdapter(onSend: _handleGenUiSend);
+    _genUiConversation = genui.Conversation(
+      controller: _surfaceController,
+      transport: _genUiTransport!,
+    );
+    _genUiEventsSub = _genUiConversation!.events.listen((event) {
+      if (event is genui.ConversationSurfaceAdded) {
+        AppLogger.info(
+          'GenUI surface added: ${event.surfaceId}',
+        );
+        _pendingSurfaceId = event.surfaceId;
+        _applySurfaceToPendingAssistant();
+      }
+    });
+  }
+
+  void _disposeGenUi() {
+    _genUiEventsSub?.cancel();
+    _genUiConversation?.dispose();
+    _genUiTransport?.dispose();
+    _genUiConversation = null;
+    _genUiTransport = null;
+  }
+
+  void _applySurfaceToPendingAssistant() {
+    final assistantId = _pendingAssistantId;
+    final surfaceId = _pendingSurfaceId;
+    final session = state.session;
+    if (assistantId == null || surfaceId == null || session == null) return;
+
+    final updatedMessages = session.messages.map((message) {
+      if (message.id == assistantId) {
+        return message.copyWith(surfaceId: surfaceId);
+      }
+      return message;
+    }).toList();
+
+    state = ChatState(
+      session: session.copyWith(messages: updatedMessages),
+      isGenerating: state.isGenerating,
+    );
+  }
+
+  Future<void> _handleGenUiSend(genai.ChatMessage message) async {
+    final isInteraction = message.parts.any((part) => part.isUiInteractionPart);
+
+    if (isInteraction) {
+      if (state.isGenerating) {
+        AppLogger.warning('Ignoring UI action while a response is generating.');
+        return;
+      }
+
+      var session = state.session;
+      if (session == null) {
+        await createSession();
+        session = state.session!;
+      }
+
+      final userMessage = ChatMessage(
+        id: _uuid.v4(),
+        role: MessageRole.user,
+        content: _formatGenUiInteraction(message),
+        createdAt: DateTime.now(),
+      );
+      final assistantMessage = ChatMessage(
+        id: _uuid.v4(),
+        role: MessageRole.assistant,
+        content: '',
+        status: MessageStatus.streaming,
+        createdAt: DateTime.now(),
+      );
+
+      session = session.copyWith(
+        messages: [...session.messages, userMessage, assistantMessage],
+        updatedAt: DateTime.now(),
+      );
+      _pendingAssistantId = assistantMessage.id;
+      _pendingSurfaceId = null;
+      state = state.copyWith(
+        session: session,
+        isGenerating: true,
+        clearError: true,
+      );
+      await _repository.saveSession(session);
+    } else if (_pendingAssistantId == null) {
+      AppLogger.warning('GenUI text request received without a pending assistant.');
+      return;
+    }
+
+    final session = state.session;
+    if (session == null) return;
+
+    await _streamAssistantResponse(session);
   }
 
   void loadSession(String sessionId) {
@@ -81,7 +192,9 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> sendMessage(String content) async {
-    AppLogger.info('sendMessage: Starting message generation. Content: "${_truncate(content, 30)}"');
+    AppLogger.info(
+      'sendMessage: Starting message generation. Content: "${_truncate(content, 30)}"',
+    );
     if (content.trim().isEmpty || state.isGenerating) {
       AppLogger.warning('sendMessage: Aborted (empty content or already generating)');
       return;
@@ -121,31 +234,34 @@ class ChatNotifier extends Notifier<ChatState> {
       updatedAt: DateTime.now(),
     );
 
-    state = ChatState(session: session, isGenerating: true);
+    _pendingAssistantId = assistantMessage.id;
+    _pendingSurfaceId = null;
+    state = state.copyWith(
+      session: session,
+      isGenerating: true,
+      clearError: true,
+    );
     await _repository.saveSession(session);
+
+    _ensureGenUi();
+    await _genUiConversation!.sendRequest(
+      genai.ChatMessage.user(content.trim()),
+    );
+  }
+
+  Future<void> _streamAssistantResponse(ChatSession session) async {
+    final assistantId = _pendingAssistantId;
+    if (assistantId == null) return;
+
+    final transport = _genUiTransport;
+    if (transport == null) return;
 
     _cancelToken = AiCancelToken();
     final settings = ref.read(settingsProvider);
-    final assistantId = assistantMessage.id;
+    var updatedMessages = List<ChatMessage>.from(session.messages);
     var currentSession = session;
 
-    // GenUI Integration using Conversation facade
-    final transport = A2uiTransportAdapter(onSend: (_) async {});
-    final conversation = Conversation(
-      controller: _surfaceController,
-      transport: transport,
-    );
-
-    String? detectedSurfaceId;
-    final eventSubscription = conversation.events.listen((event) {
-      if (event is ConversationSurfaceAdded) {
-        AppLogger.info('sendMessage: GenUI Conversation surface added: ${event.surfaceId}');
-        detectedSurfaceId = event.surfaceId as String?;
-      }
-    });
-
     try {
-      // Combine custom system prompt with GenUI fragments
       final baseSystemPrompt = currentSession.systemPrompt ?? '';
       final genUiSystemPrompt = _promptBuilder.systemPrompt().join('\n');
       final finalSystemPrompt = baseSystemPrompt.isEmpty
@@ -154,13 +270,13 @@ class ChatNotifier extends Notifier<ChatState> {
 
       final request = AiCompletionRequest(
         messages: updatedMessages
-            .where((m) => m.id != assistantId)
+            .where((message) => message.id != assistantId)
             .toList(),
         systemPrompt: finalSystemPrompt,
       );
 
       var accumulatedRawText = '';
-      AppLogger.info('sendMessage: Starting stream from fallback providers...');
+      AppLogger.info('sendMessage: Starting stream from selected model...');
       await for (final chunk in _aiService.streamWithFallback(
         request: request,
         settings: settings,
@@ -169,15 +285,15 @@ class ChatNotifier extends Notifier<ChatState> {
         accumulatedRawText += chunk;
         transport.addChunk(chunk);
 
-        updatedMessages = updatedMessages.map((m) {
-          if (m.id == assistantId) {
+        updatedMessages = updatedMessages.map((message) {
+          if (message.id == assistantId) {
             final displayContent = _sanitize(accumulatedRawText);
-            return m.copyWith(
+            return message.copyWith(
               content: displayContent.isEmpty ? '...' : displayContent,
-              surfaceId: detectedSurfaceId,
+              surfaceId: _pendingSurfaceId ?? message.surfaceId,
             );
           }
-          return m;
+          return message;
         }).toList();
 
         currentSession = currentSession.copyWith(
@@ -188,16 +304,16 @@ class ChatNotifier extends Notifier<ChatState> {
       }
 
       AppLogger.info('sendMessage: Stream completed successfully.');
-      updatedMessages = updatedMessages.map((m) {
-        if (m.id == assistantId) {
+      updatedMessages = updatedMessages.map((message) {
+        if (message.id == assistantId) {
           final finalContent = _sanitize(accumulatedRawText);
-          return m.copyWith(
+          return message.copyWith(
             content: finalContent,
             status: MessageStatus.completed,
-            surfaceId: detectedSurfaceId,
+            surfaceId: _pendingSurfaceId ?? message.surfaceId,
           );
         }
-        return m;
+        return message;
       }).toList();
 
       currentSession = currentSession.copyWith(
@@ -209,9 +325,8 @@ class ChatNotifier extends Notifier<ChatState> {
       await _repository.saveSession(currentSession);
     } on AiProviderException catch (e, stack) {
       AppLogger.warning('sendMessage: AI provider failed: ${e.message}', e, stack);
-      updatedMessages = updatedMessages
-          .where((m) => m.id != assistantId)
-          .toList();
+      updatedMessages =
+          updatedMessages.where((message) => message.id != assistantId).toList();
       currentSession = currentSession.copyWith(
         messages: updatedMessages,
         updatedAt: DateTime.now(),
@@ -231,8 +346,7 @@ class ChatNotifier extends Notifier<ChatState> {
     } finally {
       AppLogger.debug('sendMessage: Cleaning up generation resources.');
       _cancelToken = null;
-      await eventSubscription.cancel();
-      transport.dispose();
+      _pendingAssistantId = null;
     }
   }
 
@@ -265,14 +379,14 @@ class ChatNotifier extends Notifier<ChatState> {
     final session = state.session;
     if (session == null) return;
 
-    final messages = session.messages.map((m) {
-      if (m.status == MessageStatus.streaming) {
-        return m.copyWith(
+    final messages = session.messages.map((message) {
+      if (message.status == MessageStatus.streaming) {
+        return message.copyWith(
           status: MessageStatus.completed,
-          content: m.content.isEmpty ? '(Stopped)' : m.content,
+          content: message.content.isEmpty ? '(Stopped)' : message.content,
         );
       }
-      return m;
+      return message;
     }).toList();
 
     final updated = session.copyWith(
@@ -280,6 +394,7 @@ class ChatNotifier extends Notifier<ChatState> {
       updatedAt: DateTime.now(),
     );
     state = ChatState(session: updated, isGenerating: false);
+    _pendingAssistantId = null;
     _repository.saveSession(updated);
   }
 
@@ -305,18 +420,37 @@ class ChatNotifier extends Notifier<ChatState> {
     state = ChatState();
   }
 
+  String _formatGenUiInteraction(genai.ChatMessage message) {
+    final interaction = message.parts.uiInteractionParts.firstOrNull;
+    if (interaction == null) {
+      return message.text.isNotEmpty ? message.text : 'User UI interaction';
+    }
+
+    try {
+      final decoded = jsonDecode(interaction.interaction) as Map<String, dynamic>;
+      final action = decoded['action'] as Map<String, dynamic>?;
+      if (action != null) {
+        final name = action['name'] as String? ?? 'action';
+        final context = action['context'] as Map<String, dynamic>? ?? {};
+        if (context.isEmpty) return 'User action: $name';
+        return 'User action: $name (${jsonEncode(context)})';
+      }
+    } catch (_) {
+      // Fall through to generic label.
+    }
+
+    return 'User UI interaction';
+  }
+
   String _sanitize(String text) {
     if (text.isEmpty) return '';
 
     const marker = '---a2ui_JSON---';
 
-    // If this is a GenUI response (contains marker or starts with its specific prefix),
-    // we do not show any simple text.
     if (text.contains(marker) || (text.length >= 3 && marker.startsWith(text))) {
       return '';
     }
 
-    // Hide any partial marker at the end of the string
     var result = text;
     for (var i = marker.length - 1; i > 0; i--) {
       final partial = marker.substring(0, i);
